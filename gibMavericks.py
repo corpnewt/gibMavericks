@@ -2,18 +2,15 @@ import binascii, hashlib, os
 from Scripts import downloader
 
 try:
-    from secrets import randbits, choice, token_bytes
+    from secrets import randbits
     basestring = str
     from urllib.request import urlopen, Request
-    import queue as q
 except ImportError:
     from random import SystemRandom
     _sysrand = SystemRandom()
     randbits = _sysrand.getrandbits
-    choice   = _sysrand.choice
     import urllib2
     from urllib2 import urlopen, Request
-    import Queue as q
 
 BOARD_SERIAL_NUMBER="C0243070168G3M91F"
 BOARD_ID="Mac-3CBD00234E554E41"
@@ -23,9 +20,6 @@ class gibMavericks:
 
     def __init__(self):
         self.d = downloader.Downloader()
-        self.client_id = None
-        self.server_id = None
-        hashersha256 = hashlib.sha256()
 
     def get_client_id(self):
         # Return 8-bytes of random hex data
@@ -36,8 +30,9 @@ class gibMavericks:
         try:
             response = self.d.open_url("http://osrecovery.apple.com/")
             return response.headers["Set-Cookie"].split("session=")[1].split(";")[0]
-        except:
-            return None
+        except Exception as e:
+            print(" - Failed: {}".format(e))
+            exit(1)
 
     def main(self):
         # Walk through the steps to gather info, and document what we're doing
@@ -46,10 +41,6 @@ class gibMavericks:
         client_id = self.get_client_id()
         print("Getting server ID from http://osrecovery.apple.com...")
         server_id = self.get_server_id()
-        if server_id is None:
-            print(" - Failed")
-            print("")
-            exit(1)
         print("Building payload...")
         # We need to build binary representations of a handful of hex values
         payload  = binascii.unhexlify(client_id)

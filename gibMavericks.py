@@ -1,4 +1,4 @@
-import binascii, hashlib, os
+import binascii, hashlib, os, argparse
 from Scripts import downloader
 
 try:
@@ -133,7 +133,7 @@ class gibMavericks:
                 exit(1)
             print("Saved to: {}".format(saved_to))
 
-    def main(self, endpoints=None, output_folder=None, resume_incomplete=True):
+    def main(self, endpoints=None, output_folder=None, resume_incomplete=True, no_interaction=False):
         # Walk through the steps to gather info, and document what we're doing
         # along the way
         if endpoints is None:
@@ -147,9 +147,59 @@ class gibMavericks:
                 output_folder=output_folder,
                 resume_incomplete=resume_incomplete
             )
-        if os.name == "nt":
+        if os.name == "nt" and not no_interaction:
             input("Press [enter] to exit...")
 
 if __name__ == "__main__":
+    # Setup the cli args
+    parser = argparse.ArgumentParser(prog="gibMavericks", description="gibMavericks - a py script to retrieve Mavericks related files from Apple's servers.")
+    parser.add_argument(
+        "-r",
+        "--re-download",
+        help="download all files anew instead of the default behavior of resuming downloaded files.",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-e",
+        "--endpoints",
+        help=(
+            "comma delimited list of endpoints to query - options are Distribution, RecoveryImage, and OSInstaller. "
+            "e.g. -e RecoveryImage,OSInstaller - defaults to all available."
+        )
+    )
+    parser.add_argument(
+        "-o",
+        "--output-folder",
+        help=(
+            "path to the folder you'd like to save the downloaded files in - will be created if it doesn't exist. "
+            "Defaults to a Results folder next to this script."
+        )
+    )
+    parser.add_argument(
+        "-i",
+        "--no-interaction",
+        help="exit the script on completion instead of waiting for user input - Windows only.",
+        action="store_true"
+    )
+
+    args = parser.parse_args()
+
+    endpoint_list = None
+    if args.endpoints:
+        endpoint_list = []
+        valid = ("Distribution","RecoveryImage","OSInstaller")
+        for e in args.endpoints.split(","):
+            resolved_endpoint = next((x for x in valid if x.lower() == e.lower()),None)
+            if not resolved_endpoint:
+                print("Invalid endpoint passed.  Can only accept the following values:")
+                print(",".join(valid))
+                exit(1)
+            endpoint_list.append(resolved_endpoint)
+
     g = gibMavericks()
-    g.main()
+    g.main(
+        endpoints=endpoint_list,
+        output_folder=args.output_folder,
+        resume_incomplete=not args.re_download,
+        no_interaction=args.no_interaction
+    )

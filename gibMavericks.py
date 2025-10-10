@@ -32,6 +32,9 @@ class gibMavericks:
         # Get the server ID from Apple by reading the cookie data set
         try:
             response = self.d.open_url("http://osrecovery.apple.com/")
+            if response is None:
+                print(" - Failed: No response returned")
+                exit(1)
             return response.headers["Set-Cookie"].split("session=")[1].split(";")[0]
         except Exception as e:
             print(" - Failed: {}".format(e))
@@ -141,12 +144,17 @@ class gibMavericks:
         print("Generating client ID...")
         client_id = self.get_client_id()
         for endpoint in endpoints:
-            self.get_endpoint(
-                client_id=client_id,
-                endpoint=endpoint,
-                output_folder=output_folder,
-                resume_incomplete=resume_incomplete
-            )
+            try:
+                self.get_endpoint(
+                    client_id=client_id,
+                    endpoint=endpoint,
+                    output_folder=output_folder,
+                    resume_incomplete=resume_incomplete
+                )
+            except KeyboardInterrupt:
+                print(" - Skipping due to keyboard interrupt...")
+            except Exception as e:
+                print(" - Something went wrong: {}".format(e))
         if os.name == "nt" and not no_interaction:
             input("Press [enter] to exit...")
 
